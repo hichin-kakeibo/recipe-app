@@ -1,14 +1,12 @@
 :root {
-  --bg: #f8f2e8;
-  --panel: #fffaf2;
-  --card: #fffdf8;
-  --text: #4e3d2f;
-  --subtext: #7c6a5b;
-  --accent: #d7b899;
-  --accent-strong: #c89e72;
-  --danger: #b76557;
-  --border: #ead9c7;
-  --shadow: 0 8px 20px rgba(130, 97, 61, 0.09);
+  --bg: #f5f0e8;
+  --panel: #fffaf3;
+  --card: #fffdfa;
+  --main: #c4956a;
+  --text: #3d3d3d;
+  --sub: #7a6c5f;
+  --line: #e7d9ca;
+  --danger: #bb6a5f;
 }
 
 * {
@@ -20,86 +18,98 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
 }
 
 .app-header {
   text-align: center;
-  padding: 20px 16px 12px;
+  padding: 20px 14px 10px;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
 }
 
 .app-header p {
   margin: 8px 0 0;
-  color: var(--subtext);
-  font-size: 0.95rem;
+  color: var(--sub);
+  font-size: .9rem;
 }
 
-.container {
-  max-width: 960px;
+.layout {
+  max-width: 980px;
   margin: 0 auto;
-  padding: 0 12px 32px;
+  padding: 0 12px 28px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .panel {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 16px;
-  box-shadow: var(--shadow);
   padding: 14px;
-}
-
-h2 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1.2rem;
 }
 
 label {
   display: block;
   margin: 10px 0 6px;
-  font-size: 0.9rem;
+  font-size: .9rem;
 }
 
 input,
 textarea {
   width: 100%;
-  border: 1px solid #dbc6b2;
+  border: 1px solid #dcc9b6;
   border-radius: 10px;
   padding: 10px;
   font-size: 16px;
-  background: #fff;
   color: var(--text);
+  background: #fff;
 }
 
 textarea {
   resize: vertical;
 }
 
-.form-actions,
-.card-actions,
-.search-row {
+.help {
+  margin: 6px 0 0;
+  color: var(--sub);
+  font-size: .78rem;
+}
+
+.inline-check {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.inline-check input {
+  width: auto;
+}
+
+.compact {
+  margin-top: 0;
+}
+
+.search-tools,
+.actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-.form-actions {
-  margin-top: 14px;
+.actions {
+  margin-top: 12px;
 }
 
 .btn {
-  border: none;
+  border: 0;
   border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 0.95rem;
-  background: #ead7c4;
+  padding: 9px 13px;
+  background: #ebdecf;
   color: var(--text);
   cursor: pointer;
 }
@@ -109,124 +119,175 @@ textarea {
 }
 
 .btn.primary {
-  background: var(--accent);
-}
-
-.btn.danger {
-  background: #e5c0b8;
-  color: #5e2f27;
+  background: var(--main);
+  color: #fff;
 }
 
 .btn.small {
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  padding: 7px 11px;
+  font-size: .84rem;
 }
 
-.search-row {
+.btn.danger {
+  background: #f1cec8;
+  color: #632e27;
+}
+
+.chips {
+  display: flex;
   flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.favorite-filter {
-  display: flex;
   gap: 6px;
-  align-items: center;
-  margin: 0;
-  font-size: 0.9rem;
+  margin-top: 8px;
 }
 
-.favorite-filter input {
-  width: auto;
-}
-
-.recipe-list {
-  display: grid;
-  gap: 10px;
-}
-
-.recipe-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.card-image-wrap {
-  background: #f4e6d6;
-  aspect-ratio: 16 / 9;
-}
-
-.card-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.card-content {
-  padding: 12px;
-}
-
-.card-top-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.icon-btn {
-  border: 1px solid var(--border);
-  background: #fff7ee;
+.chip,
+.tag {
+  border: 1px solid var(--line);
+  background: #f6e9da;
   border-radius: 999px;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  font-size: 1.1rem;
+  padding: 4px 8px;
+  font-size: .78rem;
 }
 
-.icon-btn.active {
-  color: #e0a300;
+.chip.active {
+  border-color: var(--main);
+  background: #ead6c0;
 }
 
-.card-text {
-  margin: 8px 0 0;
-  font-size: 0.9rem;
-  white-space: pre-wrap;
-}
-
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.tag-filter-box {
   margin-top: 10px;
 }
 
-.tag {
-  font-size: 0.75rem;
-  background: #f2e3d3;
+.tag-filter-box summary {
+  cursor: pointer;
+  color: var(--sub);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.active-filters {
+  margin-top: 8px;
+}
+
+.card-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.image-btn {
+  border: 0;
+  background: #efe3d8;
+  padding: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.thumb {
+  width: 100%;
+  max-height: 270px;
+  object-fit: cover;
+  display: block;
+}
+
+.card-body {
+  padding: 11px;
+}
+
+.title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.favorite-btn {
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
-  padding: 4px 8px;
-  color: #6f573e;
+  border: 1px solid var(--line);
+  background: #fff7ef;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.favorite-btn.active {
+  color: #d59a00;
+}
+
+.memo {
+  margin: 7px 0 0;
+  white-space: pre-wrap;
+  font-size: .9rem;
 }
 
 .empty {
   text-align: center;
-  color: var(--subtext);
-  padding: 14px;
+  color: var(--sub);
+  padding: 16px;
+}
+
+.preview-modal {
+  border: none;
+  border-radius: 14px;
+  padding: 10px;
+  width: min(92vw, 560px);
+}
+
+.preview-modal::backdrop {
+  background: rgba(0, 0, 0, .5);
+}
+
+#preview-image {
+  width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.close-btn {
+  margin-left: auto;
+  display: block;
+  border: 0;
+  background: #ead8c6;
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+#preview-title {
+  margin: 8px 0 0;
+  color: var(--sub);
 }
 
 @media (min-width: 768px) {
-  .container {
+  .layout {
     grid-template-columns: 360px 1fr;
     align-items: start;
   }
 
   .form-panel {
     position: sticky;
-    top: 12px;
+    top: 10px;
   }
 }

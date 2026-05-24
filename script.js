@@ -1,173 +1,327 @@
-const STORAGE_KEY = 'recipe-app-v1';
+const STORAGE_KEY = 'recipe-screenshot-manager-v1';
+const SUGGEST_TAGS = ['豚肉', '冷凍', '作り置き', '子どもOK', 'レンチン', '節約', 'お弁当'];
 
 const form = document.getElementById('recipe-form');
-const recipeIdInput = document.getElementById('recipe-id');
+const idInput = document.getElementById('recipe-id');
+const imageInput = document.getElementById('image');
 const nameInput = document.getElementById('name');
-const imageUrlInput = document.getElementById('imageUrl');
-const ingredientsInput = document.getElementById('ingredients');
-const stepsInput = document.getElementById('steps');
-const memoInput = document.getElementById('memo');
 const tagsInput = document.getElementById('tags');
-const formTitle = document.getElementById('form-title');
+const memoInput = document.getElementById('memo');
+const favoriteInput = document.getElementById('favorite');
 const cancelEditBtn = document.getElementById('cancel-edit');
-const searchInput = document.getElementById('search-input');
+const formTitle = document.getElementById('form-title');
+
+const keywordInput = document.getElementById('keyword');
 const favoriteOnlyInput = document.getElementById('favorite-only');
-const recipeList = document.getElementById('recipe-list');
-const template = document.getElementById('recipe-card-template');
+const tagFiltersEl = document.getElementById('tag-filters');
+const activeFiltersEl = document.getElementById('active-filters');
+const tagSuggestionsEl = document.getElementById('tag-suggestions');
+const clearFiltersBtn = document.getElementById('clear-filters');
+
+const cardList = document.getElementById('card-list');
+const template = document.getElementById('card-template');
+
+const modal = document.getElementById('preview-modal');
+const modalImage = document.getElementById('preview-image');
+const modalTitle = document.getElementById('preview-title');
+const closeModalBtn = document.getElementById('close-modal');
 
 let recipes = loadRecipes();
-renderRecipes();
+let selectedTags = [];
 
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
-  const data = collectFormData();
+renderTagSuggestions();
+renderTagFilters();
+renderCards();
 
-  if (!data) return;
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-  if (recipeIdInput.value) {
-    recipes = recipes.map((recipe) => (recipe.id === recipeIdInput.value ? { ...recipe, ...data } : recipe));
-  } else {
-    recipes.unshift({ id: crypto.randomUUID(), ...data, favorite: false, createdAt: Date.now() });
+  const editingId = idInput.value;
+  const current = editingId
+    ? recipes.find((r) => r.id === editingId)
+    : null;
+
+  const imageData = await toDataUrl(
+    imageInput.files?.[0],
+    current?.imageData ?? ''
+  );
+
+  const name = nameInput.value.trim();
+  const tags = parseTags(tagsInput.value);
+  const memo = memoInput.value.trim();
+  const favorite = favoriteInput.checked;
+
+  if (!imageData || !name || tags.length === 0) {
+    alert('画像・レシピ名・タグは必須です。');
+    return;
   }
 
-  saveRecipes();
+  if (current) {
+    recipes = recipes.map((r) =>
+      r.id === current.id
+        ? {
+            ...r,
+            imageData,
+            name,
+            tags,
+            memo,
+            favorite,
+            updatedAt: Date.now(),
+          }
+        : r
+    );
+  } else {
+    recipes.unshift({
+      id: crypto.randomUUID(),
+      imageData,
+      name,
+      tags,
+      memo,
+      favorite,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  }
+
+  persist();
   resetForm();
-  renderRecipes();
+  renderTagFilters();
+  renderCards();
 });
 
 cancelEditBtn.addEventListener('click', resetForm);
-searchInput.addEventListener('input', renderRecipes);
-favoriteOnlyInput.addEventListener('change', renderRecipes);
+keywordInput.addEventListener('input', renderCards);
+favoriteOnlyInput.addEventListener('change', renderCards);
 
-function collectFormData() {
-  const name = nameInput.value.trim();
-  const imageUrl = imageUrlInput.value.trim();
-  const ingredients = ingredientsInput.value.trim();
-  const steps = stepsInput.value.trim();
-  const memo = memoInput.value.trim();
-  const tags = tagsInput.value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+clearFiltersBtn.addEventListener('click', () => {
+  selectedTags = [];
+  renderTagFilters();
+  renderCards();
+});
 
-  if (!name || !ingredients || !steps) {
-    alert('レシピ名・材料・作り方は必須です。');
-    return null;
-  }
+closeModalBtn.addEventListener('click', () => modal.close());
 
-  return { name, imageUrl, ingredients, steps, memo, tags };
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) modal.close();
+});
+
+function parseTags(text) {
+  return [
+    ...new Set(
+      text
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+    ),
+  ];
+}
+
+function toDataUrl(file, fallback) {
+  if (!file) return Promise.resolve(fallback);
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(new Error('read error'));
+
+    reader.readAsDataURL(file);
+  }).catch(() => '');
 }
 
 function loadRecipes() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
 }
 
-function saveRecipes() {
+function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
 }
 
 function resetForm() {
   form.reset();
-  recipeIdInput.value = '';
-  formTitle.textContent = 'レシピを登録';
+  idInput.value = '';
+  formTitle.textContent = 'スクショを登録';
   cancelEditBtn.hidden = true;
 }
 
-function renderRecipes() {
-  const query = searchInput.value.trim().toLowerCase();
-  const favoritesOnly = favoriteOnlyInput.checked;
+function renderTagSuggestions() {
+  tagSuggestionsEl.innerHTML = '';
 
-  const filtered = recipes.filter((recipe) => {
-    if (favoritesOnly && !recipe.favorite) return false;
-    if (!query) return true;
+  SUGGEST_TAGS.forEach((tag) => {
+    const btn = document.createElement('button');
 
-    const haystack = [
-      recipe.name,
-      recipe.ingredients,
-      recipe.steps,
-      recipe.memo,
-      ...(recipe.tags || []),
-    ]
-      .join(' ')
-      .toLowerCase();
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.textContent = `+ ${tag}`;
 
-    return haystack.includes(query);
+    btn.addEventListener('click', () => {
+      const tags = parseTags(tagsInput.value);
+
+      if (!tags.includes(tag)) tags.push(tag);
+
+      tagsInput.value = tags.join(', ');
+    });
+
+    tagSuggestionsEl.appendChild(btn);
   });
+}
 
-  recipeList.innerHTML = '';
+function renderTagFilters() {
+  const allTags = [
+    ...new Set(recipes.flatMap((r) => r.tags || [])),
+  ].sort((a, b) => a.localeCompare(b, 'ja'));
+
+  selectedTags = selectedTags.filter((tag) => allTags.includes(tag));
+  tagFiltersEl.innerHTML = '';
+
+  allTags.forEach((tag) => {
+    const btn = document.createElement('button');
+
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.textContent = tag;
+
+    if (selectedTags.includes(tag)) btn.classList.add('active');
+
+    btn.addEventListener('click', () => {
+      selectedTags = selectedTags.includes(tag)
+        ? selectedTags.filter((t) => t !== tag)
+        : [...selectedTags, tag];
+
+      renderTagFilters();
+      renderCards();
+    });
+
+    tagFiltersEl.appendChild(btn);
+  });
+}
+
+function renderActiveFilters() {
+  activeFiltersEl.innerHTML = '';
+
+  selectedTags.forEach((tag) => {
+    const span = document.createElement('span');
+
+    span.className = 'tag';
+    span.textContent = `絞り込み: ${tag}`;
+
+    activeFiltersEl.appendChild(span);
+  });
+}
+
+function renderCards() {
+  const tokens = keywordInput.value
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const favoriteOnly = favoriteOnlyInput.checked;
+
+  const filtered = recipes
+    .slice()
+    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+    .filter((r) => {
+      if (favoriteOnly && !r.favorite) return false;
+
+      if (
+        selectedTags.length &&
+        !selectedTags.every((tag) => (r.tags || []).includes(tag))
+      ) {
+        return false;
+      }
+
+      if (!tokens.length) return true;
+
+      const target = [r.name, r.memo, ...(r.tags || [])]
+        .join(' ')
+        .toLowerCase();
+
+      return tokens.every((t) => target.includes(t));
+    });
+
+  renderActiveFilters();
+  cardList.innerHTML = '';
 
   if (filtered.length === 0) {
-    recipeList.innerHTML = '<p class="empty">レシピがありません。登録してみましょう🍴</p>';
+    cardList.innerHTML =
+      '<p class="empty">該当するレシピスクショがありません。</p>';
     return;
   }
 
   filtered.forEach((recipe) => {
-    const fragment = template.content.cloneNode(true);
-    const card = fragment.querySelector('.recipe-card');
-    const image = fragment.querySelector('.card-image');
-    const title = fragment.querySelector('.card-title');
-    const ingredients = fragment.querySelector('.card-ingredients');
-    const steps = fragment.querySelector('.card-steps');
-    const memo = fragment.querySelector('.card-memo');
-    const tags = fragment.querySelector('.tag-list');
-    const favoriteBtn = fragment.querySelector('.favorite-btn');
-    const editBtn = fragment.querySelector('.edit-btn');
-    const deleteBtn = fragment.querySelector('.delete-btn');
+    const node = template.content.cloneNode(true);
 
+    const imageBtn = node.querySelector('.image-btn');
+    const thumb = node.querySelector('.thumb');
+    const title = node.querySelector('.title');
+    const memo = node.querySelector('.memo');
+    const tags = node.querySelector('.tags');
+    const favoriteBtn = node.querySelector('.favorite-btn');
+    const editBtn = node.querySelector('.edit-btn');
+    const deleteBtn = node.querySelector('.delete-btn');
+
+    thumb.src = recipe.imageData;
+    thumb.alt = recipe.name;
     title.textContent = recipe.name;
-    ingredients.textContent = `材料: ${recipe.ingredients}`;
-    steps.textContent = `作り方: ${recipe.steps}`;
-    memo.textContent = recipe.memo ? `メモ: ${recipe.memo}` : '';
-
-    image.src = recipe.imageUrl || 'https://placehold.co/800x450/f4e6d6/7c6a5b?text=No+Image';
-    image.alt = recipe.name;
+    memo.textContent = recipe.memo || '';
 
     favoriteBtn.textContent = recipe.favorite ? '★' : '☆';
     favoriteBtn.classList.toggle('active', recipe.favorite);
 
     (recipe.tags || []).forEach((tag) => {
       const span = document.createElement('span');
+
       span.className = 'tag';
       span.textContent = `#${tag}`;
+
       tags.appendChild(span);
+    });
+
+    imageBtn.addEventListener('click', () => {
+      modalImage.src = recipe.imageData;
+      modalTitle.textContent = recipe.name;
+      modal.showModal();
     });
 
     favoriteBtn.addEventListener('click', () => {
       recipe.favorite = !recipe.favorite;
-      saveRecipes();
-      renderRecipes();
+      recipe.updatedAt = Date.now();
+
+      persist();
+      renderCards();
     });
 
     editBtn.addEventListener('click', () => {
-      recipeIdInput.value = recipe.id;
+      idInput.value = recipe.id;
       nameInput.value = recipe.name;
-      imageUrlInput.value = recipe.imageUrl || '';
-      ingredientsInput.value = recipe.ingredients;
-      stepsInput.value = recipe.steps;
-      memoInput.value = recipe.memo || '';
       tagsInput.value = (recipe.tags || []).join(', ');
-      formTitle.textContent = 'レシピを編集';
+      memoInput.value = recipe.memo || '';
+      favoriteInput.checked = Boolean(recipe.favorite);
+      formTitle.textContent = 'スクショを編集';
       cancelEditBtn.hidden = false;
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     deleteBtn.addEventListener('click', () => {
-      const ok = confirm(`「${recipe.name}」を削除しますか？`);
-      if (!ok) return;
-      recipes = recipes.filter((item) => item.id !== recipe.id);
-      saveRecipes();
-      renderRecipes();
-      if (recipeIdInput.value === recipe.id) {
-        resetForm();
-      }
+      if (!confirm(`「${recipe.name}」を削除しますか？`)) return;
+
+      recipes = recipes.filter((r) => r.id !== recipe.id);
+
+      persist();
+      renderTagFilters();
+      renderCards();
+
+      if (idInput.value === recipe.id) resetForm();
     });
 
-    recipeList.appendChild(card);
+    cardList.appendChild(node);
   });
 }
