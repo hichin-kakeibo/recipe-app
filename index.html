@@ -2,10 +2,14 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>レシピスクショ管理</title>
     <link rel="stylesheet" href="style.css" />
   </head>
+
   <body>
     <header class="app-header">
       <h1>📱 レシピスクショ管理</h1>
@@ -15,22 +19,42 @@
     <main class="layout">
       <section class="panel form-panel">
         <h2 id="form-title">スクショを登録</h2>
+
         <form id="recipe-form">
           <input id="recipe-id" type="hidden" />
 
           <label for="image">スクショ画像 *</label>
           <input id="image" type="file" accept="image/*" />
-          <p class="help">編集時は画像を選ばなければ既存画像をそのまま使います。</p>
+
+          <p class="help">
+            編集時は画像を選ばなければ既存画像をそのまま使います。
+          </p>
 
           <label for="name">レシピ名 *</label>
-          <input id="name" type="text" maxlength="100" required placeholder="例）豚こまレンチン炒め" />
+          <input
+            id="name"
+            type="text"
+            maxlength="100"
+            required
+            placeholder="例）豚こまレンチン炒め"
+          />
 
           <label for="tags">タグ（カンマ区切り）*</label>
-          <input id="tags" type="text" required placeholder="豚肉, 冷凍, 作り置き" />
+          <input
+            id="tags"
+            type="text"
+            required
+            placeholder="豚肉, 冷凍, 作り置き"
+          />
+
           <div id="tag-suggestions" class="chips"></div>
 
           <label for="memo">メモ</label>
-          <textarea id="memo" rows="3" placeholder="子どもOK、朝のお弁当に便利"></textarea>
+          <textarea
+            id="memo"
+            rows="3"
+            placeholder="子どもOK、朝のお弁当に便利"
+          ></textarea>
 
           <label class="inline-check">
             <input id="favorite" type="checkbox" />
@@ -38,15 +62,30 @@
           </label>
 
           <div class="actions">
-            <button class="btn primary" type="submit">保存</button>
-            <button id="cancel-edit" class="btn" type="button" hidden>編集キャンセル</button>
+            <button class="btn primary" type="submit">
+              保存
+            </button>
+
+            <button
+              id="cancel-edit"
+              class="btn"
+              type="button"
+              hidden
+            >
+              編集キャンセル
+            </button>
           </div>
         </form>
       </section>
 
       <section class="panel list-panel">
         <div class="search-tools">
-          <input id="keyword" type="text" placeholder="キーワード検索（名前・タグ・メモ）" />
+          <input
+            id="keyword"
+            type="text"
+            placeholder="キーワード検索（名前・タグ・メモ）"
+          />
+
           <label class="inline-check compact">
             <input id="favorite-only" type="checkbox" />
             お気に入りのみ
@@ -55,36 +94,85 @@
 
         <details class="tag-filter-box">
           <summary>タグで絞り込み</summary>
+
           <div id="tag-filters" class="chips"></div>
         </details>
+
         <div class="filter-actions">
           <div id="active-filters" class="chips active-filters"></div>
-          <button id="clear-filters" class="btn small" type="button">タグ絞り込み解除</button>
+
+          <button
+            id="clear-filters"
+            class="btn small"
+            type="button"
+          >
+            タグ絞り込み解除
+          </button>
         </div>
 
-        <div id="card-list" class="card-list" aria-live="polite"></div>
+        <div
+          id="card-list"
+          class="card-list"
+          aria-live="polite"
+        ></div>
       </section>
     </main>
 
     <dialog id="preview-modal" class="preview-modal">
-      <button id="close-modal" class="close-btn" type="button" aria-label="閉じる">×</button>
-      <img id="preview-image" alt="レシピ画像拡大" />
+      <button
+        id="close-modal"
+        class="close-btn"
+        type="button"
+        aria-label="閉じる"
+      >
+        ×
+      </button>
+
+      <img
+        id="preview-image"
+        alt="レシピ画像拡大"
+      />
+
       <p id="preview-title"></p>
     </dialog>
 
     <template id="card-template">
       <article class="card">
-        <button class="image-btn" type="button"><img class="thumb" alt="レシピ画像" /></button>
+        <button class="image-btn" type="button">
+          <img class="thumb" alt="レシピ画像" />
+        </button>
+
         <div class="card-body">
           <div class="title-row">
             <h3 class="title"></h3>
-            <button class="favorite-btn" type="button" aria-label="お気に入り">☆</button>
+
+            <button
+              class="favorite-btn"
+              type="button"
+              aria-label="お気に入り"
+            >
+              ☆
+            </button>
           </div>
+
           <p class="memo"></p>
+
           <div class="chips tags"></div>
+
           <div class="actions">
-            <button class="btn small edit-btn" type="button">編集</button>
-            <button class="btn small danger delete-btn" type="button">削除</button>
+            <button
+              class="btn small edit-btn"
+              type="button"
+            >
+              編集
+            </button>
+
+            <button
+              class="btn small danger delete-btn"
+              type="button"
+            >
+              削除
+            </button>
           </div>
         </div>
       </article>

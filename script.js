@@ -35,9 +35,16 @@ renderCards();
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
+
   const editingId = idInput.value;
-  const current = editingId ? recipes.find((r) => r.id === editingId) : null;
-  const imageData = await toDataUrl(imageInput.files?.[0], current?.imageData ?? '');
+  const current = editingId
+    ? recipes.find((r) => r.id === editingId)
+    : null;
+
+  const imageData = await toDataUrl(
+    imageInput.files?.[0],
+    current?.imageData ?? ''
+  );
 
   const name = nameInput.value.trim();
   const tags = parseTags(tagsInput.value);
@@ -50,9 +57,30 @@ form.addEventListener('submit', async (e) => {
   }
 
   if (current) {
-    recipes = recipes.map((r) => (r.id === current.id ? { ...r, imageData, name, tags, memo, favorite, updatedAt: Date.now() } : r));
+    recipes = recipes.map((r) =>
+      r.id === current.id
+        ? {
+            ...r,
+            imageData,
+            name,
+            tags,
+            memo,
+            favorite,
+            updatedAt: Date.now(),
+          }
+        : r
+    );
   } else {
-    recipes.unshift({ id: crypto.randomUUID(), imageData, name, tags, memo, favorite, createdAt: Date.now(), updatedAt: Date.now() });
+    recipes.unshift({
+      id: crypto.randomUUID(),
+      imageData,
+      name,
+      tags,
+      memo,
+      favorite,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
   }
 
   persist();
@@ -64,24 +92,39 @@ form.addEventListener('submit', async (e) => {
 cancelEditBtn.addEventListener('click', resetForm);
 keywordInput.addEventListener('input', renderCards);
 favoriteOnlyInput.addEventListener('change', renderCards);
+
 clearFiltersBtn.addEventListener('click', () => {
   selectedTags = [];
   renderTagFilters();
   renderCards();
 });
+
 closeModalBtn.addEventListener('click', () => modal.close());
-modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) modal.close();
+});
 
 function parseTags(text) {
-  return [...new Set(text.split(',').map((v) => v.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      text
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+    ),
+  ];
 }
 
 function toDataUrl(file, fallback) {
   if (!file) return Promise.resolve(fallback);
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+
     reader.onload = () => resolve(String(reader.result ?? ''));
     reader.onerror = () => reject(new Error('read error'));
+
     reader.readAsDataURL(file);
   }).catch(() => '');
 }
@@ -109,52 +152,76 @@ function resetForm() {
 
 function renderTagSuggestions() {
   tagSuggestionsEl.innerHTML = '';
+
   SUGGEST_TAGS.forEach((tag) => {
     const btn = document.createElement('button');
+
     btn.type = 'button';
     btn.className = 'chip';
     btn.textContent = `+ ${tag}`;
+
     btn.addEventListener('click', () => {
       const tags = parseTags(tagsInput.value);
+
       if (!tags.includes(tag)) tags.push(tag);
+
       tagsInput.value = tags.join(', ');
     });
+
     tagSuggestionsEl.appendChild(btn);
   });
 }
 
 function renderTagFilters() {
-  const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const allTags = [
+    ...new Set(recipes.flatMap((r) => r.tags || [])),
+  ].sort((a, b) => a.localeCompare(b, 'ja'));
+
   selectedTags = selectedTags.filter((tag) => allTags.includes(tag));
   tagFiltersEl.innerHTML = '';
 
   allTags.forEach((tag) => {
     const btn = document.createElement('button');
+
     btn.type = 'button';
     btn.className = 'chip';
     btn.textContent = tag;
+
     if (selectedTags.includes(tag)) btn.classList.add('active');
+
     btn.addEventListener('click', () => {
-      selectedTags = selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag];
+      selectedTags = selectedTags.includes(tag)
+        ? selectedTags.filter((t) => t !== tag)
+        : [...selectedTags, tag];
+
       renderTagFilters();
       renderCards();
     });
+
     tagFiltersEl.appendChild(btn);
   });
 }
 
 function renderActiveFilters() {
   activeFiltersEl.innerHTML = '';
+
   selectedTags.forEach((tag) => {
     const span = document.createElement('span');
+
     span.className = 'tag';
     span.textContent = `絞り込み: ${tag}`;
+
     activeFiltersEl.appendChild(span);
   });
 }
 
 function renderCards() {
-  const tokens = keywordInput.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const tokens = keywordInput.value
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+
   const favoriteOnly = favoriteOnlyInput.checked;
 
   const filtered = recipes
@@ -162,9 +229,20 @@ function renderCards() {
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     .filter((r) => {
       if (favoriteOnly && !r.favorite) return false;
-      if (selectedTags.length && !selectedTags.every((tag) => (r.tags || []).includes(tag))) return false;
+
+      if (
+        selectedTags.length &&
+        !selectedTags.every((tag) => (r.tags || []).includes(tag))
+      ) {
+        return false;
+      }
+
       if (!tokens.length) return true;
-      const target = [r.name, r.memo, ...(r.tags || [])].join(' ').toLowerCase();
+
+      const target = [r.name, r.memo, ...(r.tags || [])]
+        .join(' ')
+        .toLowerCase();
+
       return tokens.every((t) => target.includes(t));
     });
 
@@ -172,12 +250,14 @@ function renderCards() {
   cardList.innerHTML = '';
 
   if (filtered.length === 0) {
-    cardList.innerHTML = '<p class="empty">該当するレシピスクショがありません。</p>';
+    cardList.innerHTML =
+      '<p class="empty">該当するレシピスクショがありません。</p>';
     return;
   }
 
   filtered.forEach((recipe) => {
     const node = template.content.cloneNode(true);
+
     const imageBtn = node.querySelector('.image-btn');
     const thumb = node.querySelector('.thumb');
     const title = node.querySelector('.title');
@@ -197,8 +277,10 @@ function renderCards() {
 
     (recipe.tags || []).forEach((tag) => {
       const span = document.createElement('span');
+
       span.className = 'tag';
       span.textContent = `#${tag}`;
+
       tags.appendChild(span);
     });
 
@@ -211,6 +293,7 @@ function renderCards() {
     favoriteBtn.addEventListener('click', () => {
       recipe.favorite = !recipe.favorite;
       recipe.updatedAt = Date.now();
+
       persist();
       renderCards();
     });
@@ -223,15 +306,19 @@ function renderCards() {
       favoriteInput.checked = Boolean(recipe.favorite);
       formTitle.textContent = 'スクショを編集';
       cancelEditBtn.hidden = false;
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     deleteBtn.addEventListener('click', () => {
       if (!confirm(`「${recipe.name}」を削除しますか？`)) return;
+
       recipes = recipes.filter((r) => r.id !== recipe.id);
+
       persist();
       renderTagFilters();
       renderCards();
+
       if (idInput.value === recipe.id) resetForm();
     });
 
