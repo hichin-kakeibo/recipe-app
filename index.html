@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>レシピメモ</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>🍳 レシピメモ</h1>
+      <p>お気に入りのレシピをかんたん保存</p>
+    </header>
+
+    <main class="container">
+      <section class="panel form-panel">
+        <h2 id="form-title">レシピを登録</h2>
+        <form id="recipe-form">
+          <input type="hidden" id="recipe-id" />
+
+          <label for="name">レシピ名 *</label>
+          <input id="name" name="name" type="text" required maxlength="80" placeholder="例: ふわとろオムライス" />
+
+          <label for="imageUrl">画像URL</label>
+          <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." />
+
+          <label for="ingredients">材料 *</label>
+          <textarea id="ingredients" name="ingredients" required rows="4" placeholder="卵 2個
+ごはん 1杯..." ></textarea>
+
+          <label for="steps">作り方 *</label>
+          <textarea id="steps" name="steps" required rows="5" placeholder="1. 卵をとく
+2. ごはんを炒める..." ></textarea>
+
+          <label for="memo">メモ</label>
+          <textarea id="memo" name="memo" rows="3" placeholder="辛めが好きなら胡椒多め" ></textarea>
+
+          <label for="tags">タグ（カンマ区切り）</label>
+          <input id="tags" name="tags" type="text" placeholder="時短, 朝ごはん, 洋食" />
+
+          <div class="form-actions">
+            <button type="submit" class="btn primary" id="save-btn">保存する</button>
+            <button type="button" class="btn" id="cancel-edit" hidden>編集をキャンセル</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel list-panel">
+        <div class="search-row">
+          <input id="search-input" type="text" placeholder="キーワード・タグで検索" />
+          <label class="favorite-filter">
+            <input id="favorite-only" type="checkbox" />
+            お気に入りのみ
+          </label>
+        </div>
+
+        <div id="recipe-list" class="recipe-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="recipe-card-template">
+      <article class="recipe-card">
+        <div class="card-image-wrap">
+          <img class="card-image" alt="レシピ画像" />
+        </div>
+        <div class="card-content">
+          <div class="card-top-row">
+            <h3 class="card-title"></h3>
+            <button class="icon-btn favorite-btn" type="button" aria-label="お気に入り切り替え">☆</button>
+          </div>
+          <p class="card-text card-ingredients"></p>
+          <p class="card-text card-steps"></p>
+          <p class="card-text card-memo"></p>
+          <div class="tag-list"></div>
+          <div class="card-actions">
+            <button class="btn small edit-btn" type="button">編集</button>
+            <button class="btn small danger delete-btn" type="button">削除</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>
