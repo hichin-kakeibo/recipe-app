@@ -40,6 +40,7 @@ input, textarea {
 .chip.active { border-color: var(--main); background: #ead6c0; }
 .tag-filter-box { margin-top: 10px; }
 .tag-filter-box summary { cursor: pointer; color: var(--sub); }
+.filter-actions { display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
 .active-filters { margin-top: 8px; }
 .card-list { display: grid; gap: 10px; margin-top: 10px; }
 .card { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card); }

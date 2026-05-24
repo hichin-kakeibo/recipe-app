@@ -16,6 +16,7 @@ const favoriteOnlyInput = document.getElementById('favorite-only');
 const tagFiltersEl = document.getElementById('tag-filters');
 const activeFiltersEl = document.getElementById('active-filters');
 const tagSuggestionsEl = document.getElementById('tag-suggestions');
+const clearFiltersBtn = document.getElementById('clear-filters');
 
 const cardList = document.getElementById('card-list');
 const template = document.getElementById('card-template');
@@ -63,6 +64,11 @@ form.addEventListener('submit', async (e) => {
 cancelEditBtn.addEventListener('click', resetForm);
 keywordInput.addEventListener('input', renderCards);
 favoriteOnlyInput.addEventListener('change', renderCards);
+clearFiltersBtn.addEventListener('click', () => {
+  selectedTags = [];
+  renderTagFilters();
+  renderCards();
+});
 closeModalBtn.addEventListener('click', () => modal.close());
 modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
 
