@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'recipe-screenshot-manager-v1';
 const SUGGEST_TAGS = ['豚肉', '冷凍', '作り置き', '子どもOK', 'レンチン', '節約', 'お弁当'];
+const MAX_IMAGE_WIDTH = 1200;
+const JPEG_QUALITY = 0.7;
 
 const form = document.getElementById('recipe-form');
 const idInput = document.getElementById('recipe-id');
@@ -37,14 +39,8 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const editingId = idInput.value;
-  const current = editingId
-    ? recipes.find((r) => r.id === editingId)
-    : null;
-
-  const imageData = await toDataUrl(
-    imageInput.files?.[0],
-    current?.imageData ?? ''
-  );
+  const current = editingId ? recipes.find((r) => r.id === editingId) : null;
+  const imageData = await toOptimizedDataUrl(imageInput.files?.[0], current?.imageData ?? '');
 
   const name = nameInput.value.trim();
   const tags = parseTags(tagsInput.value);
@@ -59,15 +55,7 @@ form.addEventListener('submit', async (e) => {
   if (current) {
     recipes = recipes.map((r) =>
       r.id === current.id
-        ? {
-            ...r,
-            imageData,
-            name,
-            tags,
-            memo,
-            favorite,
-            updatedAt: Date.now(),
-          }
+        ? { ...r, imageData, name, tags, memo, favorite, updatedAt: Date.now() }
         : r
     );
   } else {
@@ -83,7 +71,11 @@ form.addEventListener('submit', async (e) => {
     });
   }
 
-  persist();
+  if (!persist()) {
+    recipes = loadRecipes();
+    return;
+  }
+
   resetForm();
   renderTagFilters();
   renderCards();
@@ -106,27 +98,55 @@ modal.addEventListener('click', (e) => {
 });
 
 function parseTags(text) {
-  return [
-    ...new Set(
-      text
-        .split(',')
-        .map((v) => v.trim())
-        .filter(Boolean)
-    ),
-  ];
+  return [...new Set(text.split(',').map((v) => v.trim()).filter(Boolean))];
 }
 
-function toDataUrl(file, fallback) {
-  if (!file) return Promise.resolve(fallback);
+async function toOptimizedDataUrl(file, fallback) {
+  if (!file) return fallback;
 
+  try {
+    const sourceDataUrl = await readFileAsDataUrl(file);
+    return await resizeAndCompressImage(sourceDataUrl);
+  } catch {
+    return '';
+  }
+}
+
+function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = () => resolve(String(reader.result ?? ''));
     reader.onerror = () => reject(new Error('read error'));
-
     reader.readAsDataURL(file);
-  }).catch(() => '');
+  });
+}
+
+function resizeAndCompressImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      const scale = Math.min(1, MAX_IMAGE_WIDTH / img.width);
+      const width = Math.round(img.width * scale);
+      const height = Math.round(img.height * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('canvas context unavailable'));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+    };
+
+    img.onerror = () => reject(new Error('image load error'));
+    img.src = dataUrl;
+  });
 }
 
 function loadRecipes() {
@@ -140,7 +160,13 @@ function loadRecipes() {
 }
 
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+    return true;
+  } catch {
+    alert('画像が大きすぎます。小さい画像で試してください');
+    return false;
+  }
 }
 
 function resetForm() {
@@ -155,16 +181,13 @@ function renderTagSuggestions() {
 
   SUGGEST_TAGS.forEach((tag) => {
     const btn = document.createElement('button');
-
     btn.type = 'button';
     btn.className = 'chip';
     btn.textContent = `+ ${tag}`;
 
     btn.addEventListener('click', () => {
       const tags = parseTags(tagsInput.value);
-
       if (!tags.includes(tag)) tags.push(tag);
-
       tagsInput.value = tags.join(', ');
     });
 
@@ -173,16 +196,14 @@ function renderTagSuggestions() {
 }
 
 function renderTagFilters() {
-  const allTags = [
-    ...new Set(recipes.flatMap((r) => r.tags || [])),
-  ].sort((a, b) => a.localeCompare(b, 'ja'));
+  const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))]
+    .sort((a, b) => a.localeCompare(b, 'ja'));
 
   selectedTags = selectedTags.filter((tag) => allTags.includes(tag));
   tagFiltersEl.innerHTML = '';
 
   allTags.forEach((tag) => {
     const btn = document.createElement('button');
-
     btn.type = 'button';
     btn.className = 'chip';
     btn.textContent = tag;
@@ -207,21 +228,14 @@ function renderActiveFilters() {
 
   selectedTags.forEach((tag) => {
     const span = document.createElement('span');
-
     span.className = 'tag';
     span.textContent = `絞り込み: ${tag}`;
-
     activeFiltersEl.appendChild(span);
   });
 }
 
 function renderCards() {
-  const tokens = keywordInput.value
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
-
+  const tokens = keywordInput.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const favoriteOnly = favoriteOnlyInput.checked;
 
   const filtered = recipes
@@ -229,20 +243,10 @@ function renderCards() {
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     .filter((r) => {
       if (favoriteOnly && !r.favorite) return false;
-
-      if (
-        selectedTags.length &&
-        !selectedTags.every((tag) => (r.tags || []).includes(tag))
-      ) {
-        return false;
-      }
-
+      if (selectedTags.length && !selectedTags.every((tag) => (r.tags || []).includes(tag))) return false;
       if (!tokens.length) return true;
 
-      const target = [r.name, r.memo, ...(r.tags || [])]
-        .join(' ')
-        .toLowerCase();
-
+      const target = [r.name, r.memo, ...(r.tags || [])].join(' ').toLowerCase();
       return tokens.every((t) => target.includes(t));
     });
 
@@ -250,8 +254,7 @@ function renderCards() {
   cardList.innerHTML = '';
 
   if (filtered.length === 0) {
-    cardList.innerHTML =
-      '<p class="empty">該当するレシピスクショがありません。</p>';
+    cardList.innerHTML = '<p class="empty">該当するレシピスクショがありません。</p>';
     return;
   }
 
@@ -277,10 +280,8 @@ function renderCards() {
 
     (recipe.tags || []).forEach((tag) => {
       const span = document.createElement('span');
-
       span.className = 'tag';
       span.textContent = `#${tag}`;
-
       tags.appendChild(span);
     });
 
@@ -294,7 +295,11 @@ function renderCards() {
       recipe.favorite = !recipe.favorite;
       recipe.updatedAt = Date.now();
 
-      persist();
+      if (!persist()) {
+        recipe.favorite = !recipe.favorite;
+        return;
+      }
+
       renderCards();
     });
 
@@ -315,7 +320,10 @@ function renderCards() {
 
       recipes = recipes.filter((r) => r.id !== recipe.id);
 
-      persist();
+      if (!persist()) {
+        recipes = loadRecipes();
+      }
+
       renderTagFilters();
       renderCards();
 
