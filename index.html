@@ -6,6 +6,7 @@
     <title>レシピスクショコレクション</title>
     <link rel="stylesheet" href="style.css" />
   </head>
+
   <body>
     <header class="topbar">
       <h1>🍳 スクショコレクション</h1>
@@ -15,68 +16,122 @@
 
     <main>
       <div class="toolbar">
-        <label class="fav-only"><input id="favorite-only" type="checkbox" /> お気に入りのみ</label>
-        <button id="clear-filters" class="ghost-btn" type="button">タグ解除</button>
+        <label class="fav-only">
+          <input id="favorite-only" type="checkbox" />
+          お気に入りのみ
+        </label>
+
+        <button id="clear-filters" class="ghost-btn" type="button">
+          タグ解除
+        </button>
       </div>
+
       <div id="active-filters" class="active-filters"></div>
+
       <section id="card-list" class="card-grid" aria-live="polite"></section>
     </main>
 
-    <button id="open-form" class="fab" type="button" aria-label="登録">＋</button>
+    <button id="open-form" class="fab" type="button" aria-label="登録">
+      ＋
+    </button>
 
     <dialog id="form-modal" class="sheet-modal">
       <div class="sheet-header">
         <h2 id="form-title">スクショを登録</h2>
-        <button id="close-form" class="icon-btn" type="button">×</button>
+
+        <button id="close-form" class="icon-btn" type="button">
+          ×
+        </button>
       </div>
+
       <form id="recipe-form" class="form-body">
         <input id="recipe-id" type="hidden" />
+
         <label for="image">スクショ画像 *</label>
         <input id="image" type="file" accept="image/*" />
+
         <p class="help">編集時に未選択なら既存画像を保持します</p>
 
         <label for="name">レシピ名 *</label>
         <input id="name" type="text" maxlength="100" required />
 
         <label for="tags">タグ（カンマ区切り）*</label>
-        <input id="tags" type="text" required placeholder="豚肉, 冷凍, 作り置き" />
+        <input
+          id="tags"
+          type="text"
+          required
+          placeholder="豚肉, 冷凍, 作り置き"
+        />
+
         <div id="tag-suggestions" class="chips"></div>
 
         <label for="memo">メモ</label>
         <textarea id="memo" rows="3"></textarea>
 
-        <label class="fav-only"><input id="favorite" type="checkbox" /> お気に入り</label>
+        <label class="fav-only">
+          <input id="favorite" type="checkbox" />
+          お気に入り
+        </label>
 
         <div class="form-actions">
-          <button class="primary-btn" type="submit">保存する</button>
-          <button id="cancel-edit" class="ghost-btn" type="button" hidden>編集キャンセル</button>
+          <button class="primary-btn" type="submit">
+            保存する
+          </button>
+
+          <button
+            id="cancel-edit"
+            class="ghost-btn"
+            type="button"
+            hidden
+          >
+            編集キャンセル
+          </button>
         </div>
       </form>
     </dialog>
 
     <dialog id="preview-modal" class="preview-modal">
-      <button id="close-modal" class="icon-btn" type="button">×</button>
+      <button id="close-modal" class="icon-btn" type="button">
+        ×
+      </button>
+
       <img id="preview-image" alt="レシピ画像拡大" />
+
       <div class="preview-meta">
         <h3 id="preview-title"></h3>
+
         <p id="preview-memo"></p>
+
         <div id="preview-tags" class="chips"></div>
+
         <div class="preview-actions">
-          <button id="preview-favorite" class="ghost-btn" type="button">☆</button>
-          <button id="preview-edit" class="ghost-btn" type="button">編集</button>
-          <button id="preview-delete" class="danger-btn" type="button">削除</button>
+          <button id="preview-favorite" class="ghost-btn" type="button">
+            ☆
+          </button>
+
+          <button id="preview-edit" class="ghost-btn" type="button">
+            編集
+          </button>
+
+          <button id="preview-delete" class="danger-btn" type="button">
+            削除
+          </button>
         </div>
       </div>
     </dialog>
 
     <template id="card-template">
       <article class="card">
-        <button class="image-btn" type="button"><img class="thumb" alt="レシピ画像" /></button>
+        <button class="image-btn" type="button">
+          <img class="thumb" alt="レシピ画像" />
+        </button>
+
         <div class="card-meta">
           <div class="card-title-row">
             <h3 class="title"></h3>
             <span class="fav-mark">☆</span>
           </div>
+
           <div class="chips tags"></div>
         </div>
       </article>
