@@ -1,7 +1,8 @@
 const STORAGE_KEY = 'recipe-screenshot-manager-v1';
-const SUGGEST_TAGS = ['豚肉', '冷凍', '作り置き', '子どもOK', 'レンチン', '節約', 'お弁当'];
 const MAX_IMAGE_WIDTH = 1200;
 const JPEG_QUALITY = 0.7;
+
+const DEFAULT_SUGGEST_TAGS = ['豚肉', '冷凍', '作り置き', '子どもOK', 'レンチン', '節約', 'お弁当'];
 
 const form = document.getElementById('recipe-form');
 const idInput = document.getElementById('recipe-id');
@@ -12,6 +13,9 @@ const memoInput = document.getElementById('memo');
 const favoriteInput = document.getElementById('favorite');
 const cancelEditBtn = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
+const openFormBtn = document.getElementById('open-form');
+const closeFormBtn = document.getElementById('close-form');
+const formModal = document.getElementById('form-modal');
 
 const keywordInput = document.getElementById('keyword');
 const favoriteOnlyInput = document.getElementById('favorite-only');
@@ -26,14 +30,31 @@ const template = document.getElementById('card-template');
 const modal = document.getElementById('preview-modal');
 const modalImage = document.getElementById('preview-image');
 const modalTitle = document.getElementById('preview-title');
+const modalMemo = document.getElementById('preview-memo');
+const modalTags = document.getElementById('preview-tags');
 const closeModalBtn = document.getElementById('close-modal');
+const previewFavoriteBtn = document.getElementById('preview-favorite');
+const previewEditBtn = document.getElementById('preview-edit');
+const previewDeleteBtn = document.getElementById('preview-delete');
 
 let recipes = loadRecipes();
 let selectedTags = [];
+let activeRecipeId = null;
 
 renderTagSuggestions();
 renderTagFilters();
 renderCards();
+
+openFormBtn.addEventListener('click', () => {
+  renderTagSuggestions();
+  formModal.showModal();
+});
+
+closeFormBtn.addEventListener('click', () => formModal.close());
+
+formModal.addEventListener('click', (e) => {
+  if (e.target === formModal) formModal.close();
+});
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -77,6 +98,8 @@ form.addEventListener('submit', async (e) => {
   }
 
   resetForm();
+  formModal.close();
+  renderTagSuggestions();
   renderTagFilters();
   renderCards();
 });
@@ -97,8 +120,70 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) modal.close();
 });
 
+previewFavoriteBtn.addEventListener('click', () => {
+  const recipe = recipes.find((r) => r.id === activeRecipeId);
+  if (!recipe) return;
+
+  recipe.favorite = !recipe.favorite;
+  recipe.updatedAt = Date.now();
+
+  if (!persist()) {
+    recipe.favorite = !recipe.favorite;
+    return;
+  }
+
+  renderCards();
+  renderPreview(recipe.id);
+});
+
+previewEditBtn.addEventListener('click', () => {
+  const recipe = recipes.find((r) => r.id === activeRecipeId);
+  if (!recipe) return;
+
+  idInput.value = recipe.id;
+  nameInput.value = recipe.name;
+  tagsInput.value = (recipe.tags || []).join(', ');
+  memoInput.value = recipe.memo || '';
+  favoriteInput.checked = Boolean(recipe.favorite);
+  formTitle.textContent = 'スクショを編集';
+  cancelEditBtn.hidden = false;
+
+  modal.close();
+  renderTagSuggestions();
+  formModal.showModal();
+});
+
+previewDeleteBtn.addEventListener('click', () => {
+  const recipe = recipes.find((r) => r.id === activeRecipeId);
+  if (!recipe) return;
+
+  if (!confirm(`「${recipe.name}」を削除しますか？`)) return;
+
+  recipes = recipes.filter((r) => r.id !== recipe.id);
+
+  if (!persist()) recipes = loadRecipes();
+
+  modal.close();
+  renderTagSuggestions();
+  renderTagFilters();
+  renderCards();
+
+  if (idInput.value === recipe.id) resetForm();
+});
+
 function parseTags(text) {
   return [...new Set(text.split(',').map((v) => v.trim()).filter(Boolean))];
+}
+
+function getRecentTags(limit = 10) {
+  const recentTags = recipes
+    .slice()
+    .sort((a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0))
+    .flatMap((r) => r.tags || []);
+
+  const merged = [...recentTags, ...DEFAULT_SUGGEST_TAGS];
+
+  return [...new Set(merged)].slice(0, limit);
 }
 
 async function toOptimizedDataUrl(file, fallback) {
@@ -179,10 +264,10 @@ function resetForm() {
 function renderTagSuggestions() {
   tagSuggestionsEl.innerHTML = '';
 
-  SUGGEST_TAGS.forEach((tag) => {
+  getRecentTags().forEach((tag) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'chip';
+    btn.className = 'tag-chip';
     btn.textContent = `+ ${tag}`;
 
     btn.addEventListener('click', () => {
@@ -205,7 +290,7 @@ function renderTagFilters() {
   allTags.forEach((tag) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'chip';
+    btn.className = 'tag-chip';
     btn.textContent = tag;
 
     if (selectedTags.includes(tag)) btn.classList.add('active');
@@ -229,7 +314,7 @@ function renderActiveFilters() {
   selectedTags.forEach((tag) => {
     const span = document.createElement('span');
     span.className = 'tag';
-    span.textContent = `絞り込み: ${tag}`;
+    span.textContent = `#${tag}`;
     activeFiltersEl.appendChild(span);
   });
 }
@@ -254,7 +339,7 @@ function renderCards() {
   cardList.innerHTML = '';
 
   if (filtered.length === 0) {
-    cardList.innerHTML = '<p class="empty">該当するレシピスクショがありません。</p>';
+    cardList.innerHTML = '<p class="empty">該当するスクショがありません</p>';
     return;
   }
 
@@ -264,72 +349,44 @@ function renderCards() {
     const imageBtn = node.querySelector('.image-btn');
     const thumb = node.querySelector('.thumb');
     const title = node.querySelector('.title');
-    const memo = node.querySelector('.memo');
     const tags = node.querySelector('.tags');
-    const favoriteBtn = node.querySelector('.favorite-btn');
-    const editBtn = node.querySelector('.edit-btn');
-    const deleteBtn = node.querySelector('.delete-btn');
+    const favMark = node.querySelector('.fav-mark');
 
     thumb.src = recipe.imageData;
     thumb.alt = recipe.name;
     title.textContent = recipe.name;
-    memo.textContent = recipe.memo || '';
+    favMark.textContent = recipe.favorite ? '★' : '☆';
 
-    favoriteBtn.textContent = recipe.favorite ? '★' : '☆';
-    favoriteBtn.classList.toggle('active', recipe.favorite);
-
-    (recipe.tags || []).forEach((tag) => {
+    (recipe.tags || []).slice(0, 3).forEach((tag) => {
       const span = document.createElement('span');
       span.className = 'tag';
       span.textContent = `#${tag}`;
       tags.appendChild(span);
     });
 
-    imageBtn.addEventListener('click', () => {
-      modalImage.src = recipe.imageData;
-      modalTitle.textContent = recipe.name;
-      modal.showModal();
-    });
-
-    favoriteBtn.addEventListener('click', () => {
-      recipe.favorite = !recipe.favorite;
-      recipe.updatedAt = Date.now();
-
-      if (!persist()) {
-        recipe.favorite = !recipe.favorite;
-        return;
-      }
-
-      renderCards();
-    });
-
-    editBtn.addEventListener('click', () => {
-      idInput.value = recipe.id;
-      nameInput.value = recipe.name;
-      tagsInput.value = (recipe.tags || []).join(', ');
-      memoInput.value = recipe.memo || '';
-      favoriteInput.checked = Boolean(recipe.favorite);
-      formTitle.textContent = 'スクショを編集';
-      cancelEditBtn.hidden = false;
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-
-    deleteBtn.addEventListener('click', () => {
-      if (!confirm(`「${recipe.name}」を削除しますか？`)) return;
-
-      recipes = recipes.filter((r) => r.id !== recipe.id);
-
-      if (!persist()) {
-        recipes = loadRecipes();
-      }
-
-      renderTagFilters();
-      renderCards();
-
-      if (idInput.value === recipe.id) resetForm();
-    });
+    imageBtn.addEventListener('click', () => renderPreview(recipe.id));
 
     cardList.appendChild(node);
   });
+}
+
+function renderPreview(recipeId) {
+  const recipe = recipes.find((r) => r.id === recipeId);
+  if (!recipe) return;
+
+  activeRecipeId = recipe.id;
+  modalImage.src = recipe.imageData;
+  modalTitle.textContent = recipe.name;
+  modalMemo.textContent = recipe.memo || '';
+  modalTags.innerHTML = '';
+
+  (recipe.tags || []).forEach((tag) => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.textContent = `#${tag}`;
+    modalTags.appendChild(span);
+  });
+
+  previewFavoriteBtn.textContent = recipe.favorite ? '★ お気に入り' : '☆ お気に入り';
+  modal.showModal();
 }
